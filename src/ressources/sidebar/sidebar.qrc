@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/sidebar/macos_lionmail">
+        <file alias="stylesheet">macos_lionmail/stylesheet.css</file>
+    </qresource>
+</RCC>

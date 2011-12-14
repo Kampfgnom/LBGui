@@ -1,0 +1,28 @@
+QTabWidget::pane {
+    border: none;
+    background-image: url(:/tabwidget/itunes_white/background);
+    background-repeat: repeat-x;
+    margin-top: -22px;
+    padding-top: 22px;
+}
+QTabBar::tab {
+    font-family: Lucida Grande;
+    font-size: 10px;
+    background: transparent;
+    height: 16px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+    margin-right: 13px;
+}
+QTabBar::tab:selected {
+    font-weight: bold;
+    color: white;
+    border: 8px transparent;
+    border-left: 14px transparent;
+    border-right: 14px transparent;
+    border-image: url(:/tabwidget/itunes_white/button) 8px 16px 16px 8px;
+    padding-top: -8px;
+    padding-bottom: -8px;
+    padding-left: -6px;
+    padding-right: -6px;
+}
