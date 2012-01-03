@@ -5,11 +5,11 @@
 
 namespace LBGui {
 
-class RowListHeader : public QHeaderView
+class TreeViewHeader : public QHeaderView
 {
     Q_OBJECT
 public:
-    RowListHeader(Qt::Orientation orientation, QWidget * parent = 0 );
+    TreeViewHeader(Qt::Orientation orientation, QWidget * parent = 0 );
 
 private slots:
     void hideHeader(bool hide);

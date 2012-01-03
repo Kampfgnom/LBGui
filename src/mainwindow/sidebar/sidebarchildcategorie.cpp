@@ -3,12 +3,16 @@
 namespace LBGui {
 
 SidebarChildCategorie::SidebarChildCategorie() :
-    QStandardItem()
+    QStandardItem(),
+    m_title(QString()),
+    m_widget(0)
 {
 }
 
 SidebarChildCategorie::SidebarChildCategorie(const QString &title) :
-    QStandardItem()
+    QStandardItem(),
+    m_title(title),
+    m_widget(0)
 {
 #ifdef Q_WS_MAC
     QFont f;
@@ -45,5 +49,22 @@ QWidget *SidebarChildCategorie::widget() const
 {
     return m_widget;
 }
+
+int SidebarChildCategorie::level() const
+{
+    return m_level;
+}
+
+void SidebarChildCategorie::setLevel(int level)
+{
+    m_level = level;
+}
+
+void SidebarChildCategorie::emitActivated()
+{
+    emit categorieActivated();
+}
+
+
 
 } // namespace LBGui

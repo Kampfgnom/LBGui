@@ -1,323 +1,190 @@
 #include "actionsmanager.h"
 
-#include "mainwindow.h"
+#include "action.h"
 
-#include <Gui/Wizards/NewGame/newgamewizard.h>
-#include <Gui/Details/PlaceDetails/placedetailswidget.h>
-#include <Gui/Details/DrinkDetails/DrinkDetailsWidget.h>
-#include <Gui/Filter/newleaguedialog.h>
-#include <Misc/handler.h>
-#include <Gui/Misc/databasewindow.h>
-#include <Database/player.h>
-#include <Database/place.h>
-#include <Database/drink.h>
-#include <LBDatabase/LBDatabase.h>
-#include <Database/categorie.h>
-#include <Database/game.h>
-#include <Database/Categories/childcategorie.h>
-#include <Gui/Misc/newrowwidget.h>
+#include <mainwindow/mainwindow.h>
 
-#include <QKeySequence>
-#include <QSettings>
-#include <QAction>
-#include <QIcon>
+#include <QMutex>
+#include <QEvent>
+#include <QApplication>
+#include <QVariant>
+#include <QPointer>
 
+#include <QDebug>
 
-using namespace Gui::MainWindow;
+Q_DECLARE_METATYPE(QPointer<QWidget>)
 
-ActionsManager::ActionsManager(MainWindow *parent) :
-    QObject(parent),
-    m_mainWindow(parent)
+namespace LBGui {
+
+ActionsManager *ActionsManager::s_instance(0);
+
+ActionsManager *ActionsManager::globalInstance()
 {
-    createActions();
+    static QMutex mutex;
+    static QObject guard;
+    QMutexLocker locker(&mutex); (void) locker;
+
+    if(s_instance) {
+        return s_instance;
+    }
+
+    s_instance = new ActionsManager(&guard);
+    QApplication::instance()->installEventFilter(s_instance);
+    return s_instance;
 }
 
-void ActionsManager::createActions()
+void ActionsManager::addAction(Action *action, ActionsManager::Context context)
 {
-    actionGameWizard = constructAction(tr("&New game"),":/graphics/icons/mac/mainwindow/newgame",QKeySequence::New);
-    connect(actionGameWizard, SIGNAL(triggered()), this, SLOT(openGameWizard()));
-
-    actionNewPlayer = constructAction(tr("&Player"),":/graphics/icons/mac/mainwindow/newplayer");
-    connect(actionNewPlayer, SIGNAL(triggered()), this, SLOT(openNewPlayer()));
-
-    actionNewPlace = constructAction(tr("P&lace"),":/graphics/icons/mac/mainwindow/newplace");
-    connect(actionNewPlace, SIGNAL(triggered()), this, SLOT(openNewPlace()));
-
-    actionNewDrink = constructAction(tr("&Drink"),":/graphics/icons/mac/mainwindow/newdrink");
-    connect(actionNewDrink, SIGNAL(triggered()), this, SLOT(openNewDrink()));
-
-    actionSwitchDatabase = constructAction(tr("&Switch database"),"",QKeySequence::Open);
-    connect(actionSwitchDatabase, SIGNAL(triggered()), this, SLOT(switchDatabase()));
-
-    actionCheckForUpdates = constructAction(tr("&Check for updates..."),"");
-    actionCheckForUpdates->setMenuRole(QAction::ApplicationSpecificRole);
-    connect(actionCheckForUpdates, SIGNAL(triggered()), this, SLOT(checkForUpdates()));
-
-    actionNewPlayersFolder = constructAction(tr("Folder for players"),"");
-    connect(actionNewPlayersFolder, SIGNAL(triggered()), this, SLOT(newPlayersFolder()));
-
-    actionNewGamesFolder = constructAction(tr("Folder for games"),"");
-    connect(actionNewGamesFolder, SIGNAL(triggered()), this, SLOT(newGamesFolder()));
-
-    actionNewPlacesFolder = constructAction(tr("Folder for places"),"");
-    connect(actionNewPlacesFolder, SIGNAL(triggered()), this, SLOT(newPlacesFolder()));
-
-    actionNewDrinksFolder = constructAction(tr("Folder for drinks"),"");
-    connect(actionNewDrinksFolder, SIGNAL(triggered()), this, SLOT(newDrinksFolder()));
-
-    actionNewLeague = constructAction(tr("Folder for League"),"");
-    connect(actionNewLeague, SIGNAL(triggered()), this, SLOT(newLeagueFolder()));
-
-    actionUndo = constructAction(tr("Undo"),"",QKeySequence(QKeySequence::Undo));
-    actionRedo = constructAction(tr("Redo"),"",QKeySequence(QKeySequence::Redo));
-    actionCut = constructAction(tr("Cut"),"",QKeySequence(QKeySequence::Cut));
-    actionCut->setEnabled(false);
-    actionCopy = constructAction(tr("Copy"),"",QKeySequence(QKeySequence::Copy));
-    actionCopy->setEnabled(false);
-    actionPaste = constructAction(tr("Paste"),"",QKeySequence(QKeySequence::Paste));
-    actionPaste->setEnabled(false);
-
-    actionShowDatabase = constructAction(tr("Show Database"),"");
-    connect(actionShowDatabase,SIGNAL(triggered()), this, SLOT(showDatabase()));
-
-    actionPlayersShowGeneral = constructAction(tr("General"),"");
-    actionPlayersShowGeneral->setCheckable(true);
-    connect(actionPlayersShowGeneral,SIGNAL(triggered()),this,SLOT(playersShowGeneral()));
-    actionPlayersShowDoppelkopf = constructAction(tr("Doppelkopf"),"");
-    actionPlayersShowDoppelkopf->setCheckable(true);
-    connect(actionPlayersShowDoppelkopf,SIGNAL(triggered()),this,SLOT(playersShowDoppelkopf()));
-    actionPlayersShowSkat = constructAction(tr("Skat"),"");
-    actionPlayersShowSkat->setCheckable(true);
-    connect(actionPlayersShowSkat,SIGNAL(triggered()),this,SLOT(playersShowSkat()));
-    actionPlayersShowHearts = constructAction(tr("Hearts"),"");
-    actionPlayersShowHearts->setCheckable(true);
-    connect(actionPlayersShowHearts,SIGNAL(triggered()),this,SLOT(playersShowHearts()));
-    actionPlayersShowPrognose = constructAction(tr("Prognose"),"");
-    actionPlayersShowPrognose->setCheckable(true);
-    connect(actionPlayersShowPrognose,SIGNAL(triggered()),this,SLOT(playersShowPrognose()));
-    actionPlayersShowPoker = constructAction(tr("Poker"),"");
-    actionPlayersShowPoker->setCheckable(true);
-    connect(actionPlayersShowPoker,SIGNAL(triggered()),this,SLOT(playersShowPoker()));
-
-    actionGamesShowAll = constructAction(tr("Show All"),"");
-    actionGamesShowAll->setCheckable(true);
-    connect(actionGamesShowAll,SIGNAL(triggered()),this,SLOT(gamesShowAll()));
-    actionGamesShowUnfinished = constructAction(tr("Show unfinished games"),"");
-    actionGamesShowUnfinished->setCheckable(true);
-    connect(actionGamesShowUnfinished,SIGNAL(triggered()),this,SLOT(gamesShowUnfinished()));
+    if(!m_actions.contains(action)) {
+        m_actions.append(action);
+    }
 }
 
-QAction *ActionsManager::constructAction(const QString &name, const QString &iconPath, const QKeySequence &shortcut)
+Action *ActionsManager::zoomAction()
 {
-    QIcon icon(iconPath);
-    QAction *action = new QAction(icon,name,this);
-    action->setShortcut(shortcut);
+    static Action *action = new Action(this);
+    action->setText(tr("Zoom"));
+    connect(action, SIGNAL(triggered()), this, SLOT(on_zoom()));
     return action;
 }
 
-void ActionsManager::openGameWizard()
+Action *ActionsManager::minimizeAction()
 {
-    Wizards::NewGameWizard *gw = new Wizards::NewGameWizard(m_mainWindow);
-    gw->show();
+    static Action *action = new Action(this);
+    action->setText(tr("Minimize"));
+    action->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
+    connect(action, SIGNAL(triggered()), this, SLOT(on_minimize()));
+    return action;
 }
 
-void ActionsManager::openNewPlayer(){
-    NewRowWidget* createplayer = new NewRowWidget(new Database::Player(),m_mainWindow);
-    createplayer->show();
-}
-
-void ActionsManager::openNewPlace(){
-    NewRowWidget* createplace = new NewRowWidget(new Database::Place(),m_mainWindow);
-    createplace->show();
-}
-
-void ActionsManager::openNewDrink(){
-    NewRowWidget* createdrink = new NewRowWidget(new Database::Drink(),m_mainWindow);
-    createdrink->show();
-}
-
-void ActionsManager::switchDatabase()
+Action *ActionsManager::bringAllToFrontAction()
 {
-    QSettings settings;
-    settings.setValue("handler/databaseFile",QVariant());
-    Handler::getInstance()->showMainWindow();
+    static Action *action = new Action(this);
+    action->setText(tr("Bring all to front"));
+    connect(action, SIGNAL(triggered()), this, SLOT(bringAllToFront()));
+    return action;
 }
 
-void ActionsManager::checkForUpdates()
+Action *ActionsManager::windowAction(QWidget *w)
 {
-    Handler::getInstance()->checkForUpdates();
+    Action *action = new Action(this);
+    action->setText(w->windowTitle());
+    action->setData(QVariant::fromValue<QPointer<QWidget> >(w));
+    action->setCheckable(true);
+    action->setChecked(true);
+    connect(action, SIGNAL(triggered()), this, SLOT(on_windowAction()));
+    MainWindow* mw = qobject_cast<MainWindow*>(w);
+    if(mw) {
+        connect(mw,SIGNAL(windowTitleChanged()),this, SLOT(on_windowTitleChanged()));
+    }
+    return action;
 }
 
-void ActionsManager::newPlayersFolder()
+Action *ActionsManager::addWindowAction(QWidget *w)
 {
+    if(m_windowActions.contains(w)) {
+        return 0;
+    }
 
-    //Handler::getInstance()->database()->categories()->createFolderCategorie(Database::ChildCategorie::PlayersCategorieContentType);
+    Action *action = windowAction(w);
+    m_windowActions.insert(w, action);
+    return action;
 }
 
-void ActionsManager::newGamesFolder()
+void ActionsManager::on_minimize()
 {
-    //Handler::getInstance()->database()->categories()->createFolderCategorie(Database::ChildCategorie::GamesCategorieContentType);
-}
-
-void ActionsManager::newPlacesFolder()
-{
-    //Handler::getInstance()->database()->categories()->createFolderCategorie(Database::ChildCategorie::PlacesCategorieContentType);
-}
-
-void ActionsManager::newDrinksFolder()
-{
-    //Handler::getInstance()->database()->categories()->createFolderCategorie(Database::ChildCategorie::DrinksCategorieContentType);
-}
-
-void ActionsManager::newLeagueFolder()
-{
-    NewLeagueDialog* leaguedialog = new NewLeagueDialog(m_mainWindow);
-    leaguedialog->show();
-}
-
-void ActionsManager::showDatabase()
-{
-    DatabaseWindow* databaseWindow = new DatabaseWindow();
-    databaseWindow->show();
-}
-
-QList<QString> ActionsManager::createDefaultPlayerColumns()
-{
-    QList<QString> list;
-    list.append("Name");
-    list.append("Games");
-    list.append("Points");
-    list.append("Wins");
-    list.append("Losses");
-    list.append("LastGame");
-    list.append("LastWin");
-    list.append("Avatar");
-    list.append("Color");
-    list.append("Average");
-    return list;
-}
-
-void ActionsManager::playersShowGeneral(){
-    if(actionPlayersShowGeneral->isChecked()){
-        Database::Players::instance()->model()->setDisplayRole(AttributeVariant::MainWindow);
-        Database::Players::instance()->model()->setData(Database::Players::instance()->allRows());
-        Database::Players::instance()->model()->setVisibleColumns(createDefaultPlayerColumns());
-        actionPlayersShowDoppelkopf->setChecked(false);
-        actionPlayersShowHearts->setChecked(false);
-        actionPlayersShowPoker->setChecked(false);
-        actionPlayersShowPrognose->setChecked(false);
-        actionPlayersShowSkat->setChecked(false);
-     }
-}
-void ActionsManager::playersShowDoppelkopf(){
-    if(actionPlayersShowDoppelkopf->isChecked()){
-        Database::Players::instance()->model()->setDisplayRole(AttributeVariant::DoppelkopfWindow);
-        Database::Players::instance()->model()->setData(Database::Players::instance()->playersOfType->value("Doppelkopf"));
-
-        QList<QString> list;
-        list.append(createDefaultPlayerColumns());
-        list.append("Hochzeiten");
-        list.append("Soli");
-        list.append("Trumpfabgaben");
-        list.append("Schweinereien");
-        list.append("Schmeissereien");
-        list.append("GamePoints");
-        list.append("RePercentage");
-        list.append("ContraPercentage");
-        list.append("PointAveragePerRound");
-        list.append("RoundWinsPercentage");
-        Database::Players::instance()->model()->setVisibleColumns(list);
-
-        actionPlayersShowGeneral->setChecked(false);
-        actionPlayersShowHearts->setChecked(false);
-        actionPlayersShowPoker->setChecked(false);
-        actionPlayersShowPrognose->setChecked(false);
-        actionPlayersShowSkat->setChecked(false);
+    QWidget *w = QApplication::activeWindow();
+    if(w) {
+        w->setWindowState(w->windowState() | Qt::WindowMinimized);
     }
 }
 
-void ActionsManager::playersShowPoker(){
-    if(actionPlayersShowPoker->isChecked()){
-        Database::Players::instance()->model()->setDisplayRole(AttributeVariant::PokerWindow);
-        Database::Players::instance()->model()->setData(Database::Players::instance()->playersOfType->value("Poker"));
-        Database::Players::instance()->model()->setVisibleColumns(createDefaultPlayerColumns());
-        actionPlayersShowGeneral->setChecked(false);
-        actionPlayersShowDoppelkopf->setChecked(false);
-        actionPlayersShowHearts->setChecked(false);
-        actionPlayersShowPrognose->setChecked(false);
-        actionPlayersShowSkat->setChecked(false);
+void ActionsManager::on_zoom()
+{
+    QWidget *w = QApplication::activeWindow();
+    if(w) {
+        w->setWindowState(w->windowState() & Qt::WindowMaximized);
     }
 }
 
-void ActionsManager::playersShowHearts(){
-    if(actionPlayersShowHearts->isChecked()){
-        Database::Players::instance()->model()->setDisplayRole(AttributeVariant::HeartsWindow);
-        Database::Players::instance()->model()->setData(Database::Players::instance()->playersOfType->value("Hearts"));
-        Database::Players::instance()->model()->setVisibleColumns(createDefaultPlayerColumns());
-        actionPlayersShowGeneral->setChecked(false);
-        actionPlayersShowDoppelkopf->setChecked(false);
-        actionPlayersShowPoker->setChecked(false);
-        actionPlayersShowPrognose->setChecked(false);
-        actionPlayersShowSkat->setChecked(false);
+void ActionsManager::bringAllToFront()
+{
+    QWidget *activeWindow = QApplication::activeWindow();
+    foreach(QWidget *w, QApplication::topLevelWidgets()) {
+        if(w->windowType() == Qt::Window && w->isHidden()) {
+            w->show();
+        }
+    }
+    if(activeWindow) {
+        activeWindow->show();
     }
 }
 
-void ActionsManager::playersShowSkat(){
-    if(actionPlayersShowSkat->isChecked()){
-        Database::Players::instance()->model()->setDisplayRole(AttributeVariant::SkatWindow);
-        Database::Players::instance()->model()->setData(Database::Players::instance()->playersOfType->value("Skat"));
-
-        QList<QString> list;
-        list.append(createDefaultPlayerColumns());
-        list.append("GamePoints");
-        Database::Players::instance()->model()->setVisibleColumns(list);
-
-        actionPlayersShowGeneral->setChecked(false);
-        actionPlayersShowDoppelkopf->setChecked(false);
-        actionPlayersShowHearts->setChecked(false);
-        actionPlayersShowPoker->setChecked(false);
-        actionPlayersShowPrognose->setChecked(false);
+void ActionsManager::on_windowAction()
+{
+    Action *a = static_cast<Action*>(sender());
+    QPointer<QWidget> w = a->data().value<QPointer<QWidget> >();
+    if(!w.isNull()) {
+        w->setWindowState(w->windowState() & ~Qt::WindowMinimized | Qt::WindowActive);
+        w->show();
     }
 }
 
-void ActionsManager::playersShowPrognose(){
-    if(actionPlayersShowPrognose->isChecked()){
-        Database::Players::instance()->model()->setDisplayRole(AttributeVariant::PrognoseWindow);
-        Database::Players::instance()->model()->setData(Database::Players::instance()->playersOfType->value("Prognose"));
-        Database::Players::instance()->model()->setVisibleColumns(createDefaultPlayerColumns());
-        actionPlayersShowGeneral->setChecked(false);
-        actionPlayersShowDoppelkopf->setChecked(false);
-        actionPlayersShowHearts->setChecked(false);
-        actionPlayersShowPoker->setChecked(false);
-        actionPlayersShowSkat->setChecked(false);
-    }
+void ActionsManager::on_windowTitleChanged()
+{
+    MainWindow *mw = static_cast<MainWindow*>(sender());
+    m_windowActions.value(mw)->setText(mw->windowTitle());
 }
 
-QList<QString> ActionsManager::createDefaultGameColumns(){
-    QList<QString> list;
-    list.append("Name");
-    list.append("Date");
-    list.append("Length");
-    list.append("%Complete");
-    list.append("State");
-    list.append("Type");
-    list.append("Players");
-    list.append("Site");
-    return list;
+ActionsManager::ActionsManager(QObject *parent) :
+    QObject(parent),
+    m_actions(QList<Action*>()),
+    m_windowActions(QHash<QWidget*, Action*>())
+{
 }
 
-void ActionsManager::gamesShowAll(){
-    if(actionGamesShowAll->isChecked()){
-        Database::Games::instance()->model()->setData(Database::Games::instance()->allRows());
-        Database::Games::instance()->model()->setVisibleColumns(createDefaultGameColumns());
-        actionGamesShowUnfinished->setChecked(false);
+bool ActionsManager::eventFilter(QObject *object, QEvent *event)
+{
+    if(event->type() == QEvent::WindowDeactivate) {
+        minimizeAction()->setEnabled(false);
+        zoomAction()->setEnabled(false);
+        bringAllToFrontAction()->setEnabled(false);
+        foreach(QWidget *w, QApplication::topLevelWidgets()) {
+            if(w->windowType() == Qt::Window && !w->isHidden()) {
+                bringAllToFrontAction()->setEnabled(true);
+            }
+        }
+
+        foreach(Action *action, m_windowActions.values()) {
+            QPointer<QWidget> w = action->data().value<QPointer<QWidget> >();
+            if(w.isNull()) {
+                m_windowActions.remove(m_windowActions.key(action));
+                delete action;
+                continue;
+            }
+            action->setChecked(false);
+        }
+
+        Action *windowAction = m_windowActions.value(QApplication::activeWindow());
+        if(windowAction) {
+            windowAction->setChecked(true);
+        }
     }
+    else if(event->type() == QEvent::WindowActivate) {
+        minimizeAction()->setEnabled(true);
+        zoomAction()->setEnabled(true);
+        bringAllToFrontAction()->setEnabled(true);
+
+        foreach(Action *action, m_windowActions.values()) {
+            action->setChecked(false);
+        }
+
+        Action *windowAction = m_windowActions.value(QApplication::activeWindow());
+        if(windowAction) {
+            windowAction->setChecked(true);
+        }
+    }
+    return QObject::eventFilter(object, event);
 }
 
-void ActionsManager::gamesShowUnfinished(){
-    if(actionGamesShowUnfinished->isChecked()){
-        Database::Games::instance()->model()->setData(Database::Games::instance()->unfinishedGames->value());
-        Database::Games::instance()->model()->setVisibleColumns(createDefaultGameColumns());
-        actionGamesShowAll->setChecked(false);
-    }
-}
+} // namespace LBGui

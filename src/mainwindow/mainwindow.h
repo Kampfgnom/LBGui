@@ -10,10 +10,12 @@ namespace LBGui {
 class Splitter;
 class Sidebar;
 class SidebarChildCategorie;
+class MenuBar;
 
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+    Q_PROPERTY(QString  title READ title WRITE setTitle)
     Q_PROPERTY(QString  settingsName READ settingsName WRITE setSettingsName)
     Q_PROPERTY(bool     saveSettings READ saveSettings WRITE setSaveSettings)
     Q_PROPERTY(QString  confirmCloseMessage READ confirmCloseMessage WRITE setConfirmCloseMessage)
@@ -25,6 +27,10 @@ public:
     ~MainWindow();
 
     void closeEvent(QCloseEvent *event);
+
+    QString title() const;
+    void setTitle(const QString &title);
+    void setWindowTitle(const QString &title);
 
     QString    settingsName () const;
     void    setSettingsName (const QString &settingsName);
@@ -41,12 +47,18 @@ public:
 
     void setLeftSideBar(QWidget* sidebar);
     void setLeftSideBar(Sidebar* sidebar);
+    Sidebar *leftSideBar() const;
 
 public slots:
-    void showCategorieWidget(::LBGui::SidebarChildCategorie*);
+    virtual void showCategorieWidget(::LBGui::SidebarChildCategorie*);
+
+signals:
+    void windowTitleChanged();
 
 protected:
     void restoreSettings();
+
+    QString m_title;
 
     QString m_settingsName;
     bool    m_saveSettings;
@@ -63,9 +75,10 @@ protected:
     QWidget*        m_centralWidget;
     QWidget*        m_rightSideBar;
 
+    MenuBar*        m_menuBar;
+
 //    ToolBar* m_toolbar;
 //    Sidebar* m_sidebar;
-//    MenuBar* m_menubar;
 //    ActionsManager* m_actionsManager;
 //    QStackedWidget* m_stackedWidget;
 //    QVBoxLayout* m_vBoxLayout;

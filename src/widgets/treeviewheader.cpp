@@ -1,4 +1,4 @@
-#include "rowlistheader.h"
+#include "treeviewheader.h"
 
 #include <QMenu>
 #include <QAction>
@@ -6,14 +6,14 @@
 
 namespace LBGui {
 
-RowListHeader::RowListHeader(Qt::Orientation orientation, QWidget *parent) :
+TreeViewHeader::TreeViewHeader(Qt::Orientation orientation, QWidget *parent) :
     QHeaderView(orientation,parent),
     m_menu(0)
 {
     setStretchLastSection(true);
 }
 
-void RowListHeader::mousePressEvent(QMouseEvent* e)
+void TreeViewHeader::mousePressEvent(QMouseEvent* e)
 {
     QHeaderView::mousePressEvent(e);
 
@@ -35,7 +35,7 @@ void RowListHeader::mousePressEvent(QMouseEvent* e)
     }
 }
 
-void RowListHeader::hideHeader(bool hide)
+void TreeViewHeader::hideHeader(bool hide)
 {
     QAction *action = static_cast<QAction*>(sender());
 

@@ -50,16 +50,16 @@ void SidebarItemDelegateMac::paint(QPainter *painter, const QStyleOptionViewItem
 
             painter->setFont(font);
             painter->setPen(shadow);
-            painter->drawText(  option.rect.x()+30,option.rect.y()+18,
+            painter->drawText(  option.rect.x()+28,option.rect.y()+18,
                                 text);
             painter->setPen(Qt::white);
-            painter->drawText(  option.rect.x()+30,option.rect.y()+17,
+            painter->drawText(  option.rect.x()+28,option.rect.y()+17,
                                 text);
         }
         else {
             painter->setFont(font);
             painter->setPen(Qt::black);
-            painter->drawText(  option.rect.x()+30,option.rect.y()+17,
+            painter->drawText(  option.rect.x()+28,option.rect.y()+17,
                                 text);
         }
 

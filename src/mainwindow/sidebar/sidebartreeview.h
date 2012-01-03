@@ -24,6 +24,9 @@ public:
 signals:
     void categorieChanged(::LBGui::SidebarChildCategorie*);
 
+protected:
+    void drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const;
+
 private slots:
     void on_clicked(const QModelIndex&);
 

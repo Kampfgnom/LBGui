@@ -31,6 +31,11 @@ public:
 
     SidebarParentCategorie *addParentCategorie(const QString& title);
     SidebarChildCategorie* addChildCategorie(int parentIndex, const QString& title);
+    SidebarChildCategorie* addChildCategorie(int parentIndex, int childIndex, const QString &title);
+
+    void removeCategorie(SidebarChildCategorie *categorie);
+
+    void clearCategorie(int parentIndex);
 
     void setSelectedCategorie(int parent, int child);
 
@@ -40,8 +45,10 @@ public slots:
 signals:
     void categorieChanged(::LBGui::SidebarChildCategorie*);
 
-private:
+protected:
     Style m_style;
+
+    MainWindow *m_mainWindow;
 
     SidebarStatusBar* m_statusBar;
     SidebarTreeView* m_treeView;

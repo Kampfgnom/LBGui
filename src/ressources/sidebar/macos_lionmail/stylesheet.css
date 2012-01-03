@@ -4,16 +4,22 @@ QTreeView {
                                         stop:1 rgba(210, 216, 224, 255) );
     }
 
-QTreeView::branch:open:has-children:!has-siblings,
-QTreeView::branch:open:has-children:has-siblings  {
+QTreeView::branch:open:has-children:!has-siblings:!selected,
+QTreeView::branch:open:has-children:has-siblings:!selected  {
     border-image: none;
-    image: none /*url(:/graphics/styles/mac/sidebar/treeview-item-expanded-osx)*/;
+    image: none; /*url(:/sidebar/macos_lionmail/branch_open);*/
+}
+
+QTreeView::branch:open:has-children:!has-siblings:selected,
+QTreeView::branch:open:has-children:has-siblings:selected  {
+    border-image: none;
+    image: none;
 }
 
 QTreeView::branch:has-children:!has-siblings:closed,
 QTreeView::branch:closed:has-children:has-siblings {
     border-image: none;
-    image: none /*url(:/graphics/styles/mac/sidebar/treeview-item-closed-osx)*/;
+    image: none;
 }
 
 QTreeView {

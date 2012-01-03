@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 
+#include "menubar.h"
 #include "sidebar/sidebar.h"
 #include "sidebar/sidebarchildcategorie.h"
 
@@ -18,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
 
     //properties
+    m_title(QString()),
     m_settingsName(QLatin1String("MainWindow")),
     m_saveSettings(false),
     m_confirmCloseMessage(QString()),
@@ -27,15 +29,33 @@ MainWindow::MainWindow(QWidget *parent) :
     m_verticalSplitter(0),
     m_leftSideBar(0),
     m_centralWidget(0),
-    m_rightSideBar(0)
+    m_rightSideBar(0),
+
+    m_menuBar(MenuBar::createMenuBar(this))
 {
-    setAttribute(Qt::WA_DeleteOnClose);
     _setupMainspace();
 }
 
 MainWindow::~MainWindow()
 {
     _saveSettings();
+}
+
+QString MainWindow::title() const
+{
+    return m_title;
+}
+
+void MainWindow::setTitle(const QString &title)
+{
+    m_title = title;
+    setWindowTitle(title);
+}
+
+void MainWindow::setWindowTitle(const QString &title)
+{
+    QMainWindow::setWindowTitle(title);
+    emit windowTitleChanged();
 }
 
 QString MainWindow::settingsName() const
@@ -166,8 +186,12 @@ void MainWindow::setLeftSideBar(QWidget *sidebar)
 
 void MainWindow::setLeftSideBar(Sidebar *sidebar)
 {
-    //TODO: connects
     setLeftSideBar(static_cast<QWidget*>(sidebar));
+}
+
+Sidebar *MainWindow::leftSideBar() const
+{
+    return qobject_cast<Sidebar*>(m_leftSideBar);
 }
 
 void MainWindow::showCategorieWidget(SidebarChildCategorie *categorie)
@@ -175,6 +199,12 @@ void MainWindow::showCategorieWidget(SidebarChildCategorie *categorie)
     QWidget *w = categorie->widget();
 
     if(w) {
+        if(!w->windowTitle().isEmpty()) {
+            setWindowTitle(w->windowTitle()+ QString::fromUtf8(" \u2013 ")+m_title );
+        }
+        if(!categorie->icon().isNull()) {
+            setWindowIcon(categorie->icon());
+        }
         setCentralWidget(w);
     }
 }

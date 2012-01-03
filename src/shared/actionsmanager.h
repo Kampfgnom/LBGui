@@ -2,152 +2,59 @@
 #define ACTIONSMANAGER_H
 
 #include <QObject>
-#include <QPointer>
-#include <QKeySequence>
+#include <QMultiHash>
 
 class QAction;
 
-namespace Gui
-{
-
-namespace MainWindow
-{
+namespace LBGui {
 
 class MainWindow;
+class Action;
 
-//! Verwaltet QActions, die in unserer Gui eingesetzt werden.
-/*!
-  Jede Action, die wir verwenden sollte hier mit Hilfe der Funktion constructAction() erstellt werden und dann mit einem eigenen Slot verknüpft werden.<br>
-  Diese Actions werden dann vom MainWindow, beziehungsweise ihren Komponenten verwendet.<br>
-  <br>
-  Dieses Schema sollten wir eventuell auch für andere Fenster übernehmen, das ist aber wohl nicht zwingend nötig.
-  */
 class ActionsManager : public QObject
 {
     Q_OBJECT
+    Q_ENUMS(Context)
 public:
-    /*!
-      Erstellt eine Action-Verwaltungsklasse für das MainWindow \\pparent.
-      */
-    explicit ActionsManager(MainWindow *parent = 0);
+    enum Context {
+        AnyContext = 0
+    };
 
-    /*!
-      Diese Action öffnet einen GameWizard mit MainWindow als parent.
-      \see Slot: openGameWizard()
-      */
-    QAction* actionGameWizard;
+    static ActionsManager *globalInstance();
 
-    /*!
-      Diese Action erstellt einen neuen Spieler und öffnet das zugehörige PlayerWidget, um ihn zu editieren.
-      \see Slot: openNewPlayer()
-      */
-    QAction* actionNewPlayer;
+    void addAction(Action *action, Context context = AnyContext);
 
-    /*!
-      Diese Action öffnet ein NewPlaceWidget mit MainWindow als parent.
-      \see Slot: openNewPlace()
-      */
-    QAction* actionNewPlace;
+    Action *minimizeAction();
 
-    /*!
-      Diese Action öffnet ein NewDrinkWidget mit MainWindow als parent.
-      \see Slot: openNewDrink()
-      */
-    QAction* actionNewDrink;
+    Action *zoomAction();
 
-    /*!
-      Diese Action schließt das aktuelle MainWindow, fragt den User nach einer Datenbankdatei und öffnet dafür ein neues MainWindow.
-      \see switchDatabase()
-      */
-    QAction* actionSwitchDatabase;
+    Action *bringAllToFrontAction();
 
-    QAction *actionCheckForUpdates;
+    Action *addWindowAction(QWidget *w);
 
-    QAction *actionNewPlayersFolder;
-    QAction *actionNewGamesFolder;
-    QAction *actionNewPlacesFolder;
-    QAction *actionNewDrinksFolder;
-    QAction *actionNewLeague;
+protected slots:
+    void on_minimize();
+    void on_zoom();
+    void bringAllToFront();
+    void on_windowAction();
+    void on_windowTitleChanged();
 
-    QAction * actionUndo;
-    QAction * actionRedo;
-    QAction * actionCut;
-    QAction * actionCopy;
-    QAction * actionPaste;
+protected:
+    ActionsManager(QObject *parent = 0);
 
-    QAction * actionShowDatabase;
-    QAction * actionPlayersShowGeneral;
-    QAction * actionPlayersShowDoppelkopf;
-    QAction * actionPlayersShowSkat;
-    QAction * actionPlayersShowPrognose;
-    QAction * actionPlayersShowHearts;
-    QAction * actionPlayersShowPoker;
+    Action *windowAction(QWidget *w);
 
-    QAction* actionGamesShowAll;
-    QAction* actionGamesShowUnfinished;
+    bool eventFilter(QObject *, QEvent *);
 
-public slots:
-    /*!
-      Wird von der Action actionGameWizard() aufgerufen.
-      */
-    void openGameWizard();
-
-    /*!
-      Wird von der Action actionNewPlayer() aufgerufen.
-      */
-    void openNewPlayer();
-
-    /*!
-      Wird von der Action actionNewPlace() aufgerufen.
-      */
-    void openNewPlace();
-
-    /*!
-      Wird von der Action actionNewDrink() aufgerufen.
-      */
-    void openNewDrink();
-
-    /*!
-      Wird von der Action actionSwitchDatabase() aufgerufen.
-      */
-    void switchDatabase();
-
-    void checkForUpdates();
-
-    void newPlayersFolder();
-    void newGamesFolder();
-    void newPlacesFolder();
-    void newDrinksFolder();
-    void newLeagueFolder();
-
-    void showDatabase();
-
-    void playersShowGeneral();
-    void playersShowDoppelkopf();
-    void playersShowSkat();
-    void playersShowPrognose();
-    void playersShowPoker();
-    void playersShowHearts();
-
-    void gamesShowAll();
-    void gamesShowUnfinished();
+    QList<Action*> m_actions;
+    QHash<QWidget*, Action*> m_windowActions;
 
 private:
-    /*!
-      Erstellt eine neue QAction mit Namen \p name, dem Icon \p iconPath und der optionalen Tastenkombination \p shortcut.
-      */
-    QAction *constructAction(const QString& name, const QString& iconPath, const QKeySequence &shortcut = QKeySequence());
+    static ActionsManager *s_instance;
 
-    void createActions();
-    QList<QString> createDefaultPlayerColumns();
-    QList<QString> createDefaultGameColumns();
-
-    MainWindow* m_mainWindow; //!< Das MainWindow mit dem die Actions arbeiten.
 
 };
 
-}
-
-}
+} // namespace LBGui
 
 #endif // ACTIONSMANAGER_H

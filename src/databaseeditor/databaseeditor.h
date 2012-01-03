@@ -1,11 +1,22 @@
 #ifndef DATABASEWINDOW_H
 #define DATABASEWINDOW_H
 
-#include "mainwindow/mainwindow.h"
+#include "../mainwindow/mainwindow.h"
+
+namespace LBDatabase {
+class Database;
+class Table;
+}
 
 namespace LBGui {
 
-class TabWidget;
+class DatabaseEditorController;
+class DatabaseEditorActions;
+class DatabaseEditorSidebar;
+class RecentFilesManager;
+class ToolBar;
+class DatabaseWidget;
+class TableWidget;
 
 class DatabaseEditor : public MainWindow
 {
@@ -13,6 +24,37 @@ class DatabaseEditor : public MainWindow
 
 public:
     explicit DatabaseEditor(QWidget *parent = 0);
+
+    DatabaseEditorSidebar *dbeSidebar() const;
+
+    RecentFilesManager *recentFilesManager() const;
+
+    DatabaseEditorController *controller() const;
+    DatabaseEditorActions *actions() const;
+
+    void showDatabase(LBDatabase::Database *database);
+    void showTable(LBDatabase::Table *table);
+
+    void closeEvent(QCloseEvent *event);
+
+protected slots:
+    friend class DatabaseEditorController;
+
+    void reflectCurrentDatabaseDirtyState();
+
+private:
+    void createSideBar();
+    void createMenuBar();
+    void createToolBar();
+
+    DatabaseEditorController *m_controller;
+    DatabaseEditorActions *m_actions;
+    RecentFilesManager *m_recentFiles;
+
+    ToolBar *m_toolBar;
+
+    DatabaseWidget *m_databaseWidget;
+    TableWidget *m_tableWidget;
 };
 
 } //namespace LBGui

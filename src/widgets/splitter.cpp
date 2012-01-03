@@ -10,6 +10,7 @@ Splitter::Splitter(Qt::Orientation orientation, QWidget *parent) :
     QSplitter(orientation,parent),
     m_style(NoStyle)
 {
+    setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 }
 
 Splitter::Style Splitter::style() const
@@ -91,6 +92,7 @@ void SplitterHandle::paintEvent(QPaintEvent *event)
             return;
         }
     }
+    QSplitterHandle::paintEvent(event);
 }
 
 QSize SplitterHandle::sizeHint() const

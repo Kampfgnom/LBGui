@@ -11,6 +11,8 @@
 #include <QHeaderView>
 #include <QFont>
 #include <QDragMoveEvent>
+#include <QPainter>
+
 #include <QDebug>
 
 namespace LBGui {
@@ -29,6 +31,7 @@ SidebarTreeView::SidebarTreeView(Sidebar *parent) :
 
     setAcceptDrops(true);
     setDropIndicatorShown(true);
+    setExpandsOnDoubleClick(false);
 
     connect(this,SIGNAL(clicked(QModelIndex)),this,SLOT(on_clicked(QModelIndex)));
 
@@ -50,6 +53,7 @@ SidebarTreeView::SidebarTreeView(Sidebar *parent) :
 
 void SidebarTreeView::setSelectedIndex(int parent, int child)
 {
+    this->selectionModel()->clear();
     QModelIndex index = model()->index(parent,0,model()->index(child,0,QModelIndex()));
     selectionModel()->setCurrentIndex(index,QItemSelectionModel::Select);
     on_clicked(index);
@@ -79,7 +83,46 @@ void SidebarTreeView::on_clicked(const QModelIndex &index)
         return;
     }
 
+    categorie->emitActivated();
     emit categorieChanged(categorie);
+}
+
+void SidebarTreeView::drawBranches(QPainter *painter, const QRect &rect, const QModelIndex &index) const
+{
+    if(selectionModel()->isRowSelected(index.row(),index.parent())) {
+        static QColor bordertop("#b9c0d3");
+        static QColor borderbottom("#959fb9");
+
+        painter->setPen(bordertop);
+        painter->drawLine(rect.x(),rect.y(),rect.width(),rect.y());
+        painter->setPen(borderbottom);
+        painter->drawLine(rect.x(),rect.y() + rect.height() - 1,rect.width(),rect.y() + rect.height() - 1);
+    }
+
+    if(index.parent().isValid() && !index.parent().parent().isValid()) {
+        static QImage branch_open(":/sidebar/macos_lionmail/branch_open");
+        static QImage branch_open_selected(":/sidebar/macos_lionmail/branch_open_selected");
+        static QImage branch_closed(":/sidebar/macos_lionmail/branch_closed");
+        static QImage branch_closed_selected(":/sidebar/macos_lionmail/branch_closed_selected");
+        if(selectionModel()->isRowSelected(index.row(),index.parent())) {
+            if(isExpanded(index)) {
+                painter->drawImage(rect.x() + 5, rect.y() + 10, branch_open_selected);
+            }
+            else {
+                painter->drawImage(rect.x() + 5, rect.y() + 8, branch_closed_selected);
+            }
+
+
+        }
+        else {
+            if(isExpanded(index)) {
+                painter->drawImage(rect.x() + 5, rect.y() + 10, branch_open);
+            }
+            else {
+                painter->drawImage(rect.x() + 6, rect.y() + 8, branch_closed);
+            }
+        }
+    }
 }
 
 //Database::ChildCategorie *SidebarTreeView::selectedCategorie() const

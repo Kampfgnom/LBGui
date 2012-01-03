@@ -5,13 +5,16 @@
 
 namespace LBGui {
 
-class SidebarChildCategorie : public QStandardItem
+class SidebarChildCategorie : public QObject, public QStandardItem
 {
+    Q_OBJECT
 public:
     enum Role {
         SelfRole = Qt::UserRole + 1,
         TitleRole,
-        WidgetRole
+        WidgetRole,
+        CustomDataRole,
+        ModelIndexRole
     };
 
     explicit SidebarChildCategorie();
@@ -21,11 +24,24 @@ public:
     QString title() const;
 
     void setWidget(QWidget *w);
-    QWidget *widget() const;
+    virtual QWidget *widget() const;
+
+    int level() const;
+
+signals:
+    void categorieActivated();
 
 protected:
+    friend class SidebarTreeView;
+    friend class Sidebar;
+
+    void emitActivated();
+
+    void setLevel(int level);
+
     QString m_title;
     QWidget *m_widget;
+    int m_level;
 };
 
 } // namespace LBGui

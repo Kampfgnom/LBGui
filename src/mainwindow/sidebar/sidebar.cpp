@@ -16,6 +16,7 @@ namespace LBGui {
 
 Sidebar::Sidebar(MainWindow *parent) :
     QWidget(parent),
+    m_mainWindow(parent),
     m_categoriesModel(new QStandardItemModel(this))
 {
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -35,6 +36,9 @@ Sidebar::Sidebar(MainWindow *parent) :
 //#endif
     setLayout(layout);
     setStyle(MacOSLionMailStyle);
+
+    setMinimumSize(200,200);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::MinimumExpanding);
 
     connect(m_treeView, SIGNAL(categorieChanged(::LBGui::SidebarChildCategorie*)),
             this,       SIGNAL(categorieChanged(::LBGui::SidebarChildCategorie*)));
@@ -87,9 +91,33 @@ SidebarParentCategorie* Sidebar::addParentCategorie(const QString &title)
 
 SidebarChildCategorie *Sidebar::addChildCategorie(int parentIndex, const QString &title)
 {
+    return addChildCategorie(parentIndex, -1, title);
+}
+
+SidebarChildCategorie *Sidebar::addChildCategorie(int parentIndex, int childIndex, const QString &title)
+{
     SidebarChildCategorie* item = new SidebarChildCategorie(title);
-    m_categoriesModel->invisibleRootItem()->child(parentIndex)->appendRow(item);
+    if(childIndex > -1) {
+        m_categoriesModel->invisibleRootItem()->child(parentIndex)->child(childIndex)->appendRow(item);
+        item->setLevel(2);
+    }
+    else {
+        m_categoriesModel->invisibleRootItem()->child(parentIndex)->appendRow(item);
+        item->setLevel(1);
+    }
     return item;
+}
+
+void Sidebar::removeCategorie(SidebarChildCategorie *categorie)
+{
+    QStandardItem *parentItem = categorie->QStandardItem::parent();
+    parentItem->removeRow(categorie->row());
+}
+
+void Sidebar::clearCategorie(int parentIndex)
+{
+    SidebarParentCategorie* item = static_cast<SidebarParentCategorie*>(m_categoriesModel->invisibleRootItem()->child(parentIndex));
+    item->removeRows(0,item->rowCount());
 }
 
 void Sidebar::setSelectedCategorie(int parent, int child)
@@ -99,7 +127,7 @@ void Sidebar::setSelectedCategorie(int parent, int child)
 
 void Sidebar::expandAll()
 {
-    m_treeView->expandAll();
+    m_treeView->expandAll(); //TODO nur toplevel expanden...
 }
 
 } // namespace LBGui
