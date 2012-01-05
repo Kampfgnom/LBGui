@@ -28,6 +28,7 @@ AutosaveFile::AutosaveFile(const QString &name, QObject *parent) :
     m_original(name),
     m_copy(name+QLatin1String(".lbautosave"))
 {
+    m_copy.remove();
     m_original.copy(m_copy.fileName());
 }
 

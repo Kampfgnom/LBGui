@@ -27,7 +27,6 @@ HEADERS += \
     shared/global.h \
     shared/recentfilesmanager.h \
     mainwindow/toolbar.h \
-    databaseeditor/databasewidget.h \
     widgets/groupbox.h \
     widgets/treeview.h \
     widgets/treeviewheader.h \

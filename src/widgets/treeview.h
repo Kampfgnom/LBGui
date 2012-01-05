@@ -21,11 +21,11 @@ public:
         ItunesWhite
     };
 
+    explicit TreeView(QWidget *parent = 0);
+
     Style style() const;
 
     void setStyle(Style style);
-
-    explicit TreeView(QWidget *parent = 0);
 
     int doubleClickActions() const;
 
